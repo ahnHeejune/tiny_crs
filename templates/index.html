@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Shopvisor:Shoes</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background-color: #f9fafb;
+      margin: 0;
+      padding: 0;
+    }
+    .container {
+      max-width: 900px;
+      margin: 40px auto;
+      padding: 20px;
+      background: white;
+      box-shadow: 0 0 12px rgba(0,0,0,0.1);
+      border-radius: 12px;
+    }
+    h2 {
+      color: #333;
+    }
+    .chat-box {
+      margin-bottom: 20px;
+    }
+    input[type="text"] {
+      width: 80%;
+      padding: 12px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      font-size: 16px;
+    }
+    button {
+      margin-top: 10px;
+      padding: 10px 20px;
+      background-color: #007bff;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #0056b3;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+    }
+    th, td {
+      padding: 12px;
+      border: 1px solid #ddd;
+      text-align: left;
+    }
+    th {
+      background-color: #f1f1f1;
+    }
+    .detail-box {
+      margin-top: 20px;
+      padding: 15px;
+      border-left: 4px solid #007bff;
+      background: #f0f8ff;
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>🛍️ 신발 추천 전문가 Shopvisor</h2>
+    <div id="chat-response">어떤 용도의 신발을 보여 드릴까요?</div>
+    <div class="chat-box">
+      <input type="text" id="user-input" value="" />
+      <button onclick="sendMessage()">응답</button>
+    </div>
+    <table id="results-table" style="display:none;">
+      <thead>
+        <tr>
+          <th>상품명</th>
+          <th>브랜드</th>
+          <th>가격</th>
+          <th>평점</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+
+    <div class="detail-box" id="detail-box"></div>
+  </div>
+
+  <script>
+    function sendMessage() {
+      const input = document.getElementById("user-input").value;
+      fetch("/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message: input })
+      })
+      .then(res => res.json())
+      .then(data => {
+        document.getElementById("chat-response").innerText = data.response;
+        const tbody = document.querySelector("#results-table tbody");
+        tbody.innerHTML = "";
+        if (data.results.length === 0) { // 배열이 비어 있으면 테이블을 숨김
+            document.getElementById("results-table").style.display = "none";
+        } else {
+            data.results.forEach(item => {
+            const row = document.createElement("tr");
+            row.innerHTML = `
+            <td><a href="#" onclick="loadDetail('${item.id}')">${item.model || '상품명 없음'}</a></td>
+            <td>${item.brand || ''}</td>
+            <td>${item.price || ''}</td>
+            <td>${item.rating || ''}</td>
+          `;
+            tbody.appendChild(row);
+            });
+            document.getElementById("results-table").style.display = "table";
+        }
+      });
+
+      // 메시지 전송 후 입력창 비우기
+      document.getElementById("user-input").value = '';
+    }
+
+    // Enter 키를 눌렀을 때 버튼 클릭처럼 동작하도록 설정
+    document.getElementById("user-input").addEventListener("keydown", function(event) {
+        if (event.key === "Enter") {  // Enter 키가 눌렸을 때
+            sendMessage();  // sendMessage 함수 호출
+        }
+    });
+
+    function loadDetail(id) {
+      fetch(`/detail/${id}`)
+        .then(res => res.json())
+        .then(data => {
+          const box = document.getElementById("detail-box");
+          box.style.display = "block";
+          box.innerHTML = `
+            <h3>${data.product_name}</h3>
+            <p><strong>브랜드:</strong> ${data.brand}</p>
+            <p><strong>가격:</strong> ${data.price}</p>
+            <p><strong>평점:</strong> ${data.rating}</p>
+            <p><strong>설명:</strong> ${data.description}</p>
+          `;
+        });
+    }
+  </script>
+</body>
+</html>
+
